@@ -1,5 +1,14 @@
 WIM_CHANGE_LOG = [[
-Version 1.3.3 (12-27-2017)|cffffffff
+Version 1.3.5 (11-15-2026)|cffffffff
+[+] - All conversations share one window with a tab per conversation.
+[+] - Added a "Tabs" options page (colors, flashing, size, focus).
+[*] - Switching tabs only updates what changed (no more hitching).
+[*] - Minimap icon stops flashing once unread conversations are read or closed.
+[*] - The visible conversation is no longer flagged as unread.
+[*] - /wim reset no longer alters the defaults and also resets tab options.
+[*] - /who results return to the chat frame after a lookup times out.
+
+|rVersion 1.3.3 (12-27-2017)|cffffffff
 [+] - refactoring by shirsig
 
 Version 1.3.2 (01-05-2017)|cffffffff
