@@ -1,5 +1,8 @@
 WIM_CHANGE_LOG = [[
-Version 1.3.6 (11-15-2026)|cffffffff
+Version 1.3.7 (11-15-2026)|cffffffff
+[*] - Tabs options page: the sliders now show their value instead of "Test".
+
+|rVersion 1.3.6 (11-15-2026)|cffffffff
 [*] - Fixed the frame drop whenever a conversation window was shown or a tab was switched.
 [*] - Windows come to the front when clicked or opened with /w or /r, not on every show.
 [+] - Added /wim profile to print how long showing a window takes.

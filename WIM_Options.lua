@@ -305,6 +305,13 @@ function WIM_Options_TabsInit()
 	WIM_OptionsTabbedFrameTabsHeightTitle:SetText(WIM_L_TABHEIGHTOPT);
 	WIM_OptionsTabbedFrameTabsHeight:SetValue(cfg.height);
 
+	-- the value labels are otherwise only filled in when a slider is dragged
+	-- (until then they showed the template's placeholder text)
+	WIM_Options_TabsSliderLabel(WIM_OptionsTabbedFrameTabsFlashSpeed, "flashSpeed");
+	WIM_Options_TabsSliderLabel(WIM_OptionsTabbedFrameTabsNormalAlpha, "normalAlpha");
+	WIM_Options_TabsSliderLabel(WIM_OptionsTabbedFrameTabsWidth, "width");
+	WIM_Options_TabsSliderLabel(WIM_OptionsTabbedFrameTabsHeight, "height");
+
 	WIM_Options_TabsUpdateEnabled();
 end
 
@@ -337,18 +344,28 @@ function WIM_Options_TabsSliderChanged(slider, key)
 	end
 	local cfg = WIM_TabSettings();
 	local value = slider:GetValue();
-	local label = getglobal(slider:GetName().."EditBox");
 	if(key == "flashSpeed") then
 		cfg.flashSpeed = value / 1000;
-		label:SetText(value.." ms");
 	elseif(key == "normalAlpha") then
 		cfg.normalAlpha = value / 100;
-		label:SetText(value.."%");
 	else
 		cfg[key] = value;
+	end
+	WIM_Options_TabsSliderLabel(slider, key);
+	WIM_TabsUpdate();
+end
+
+-- Show a slider's current value next to it
+function WIM_Options_TabsSliderLabel(slider, key)
+	local value = slider:GetValue();
+	local label = getglobal(slider:GetName().."EditBox");
+	if(key == "flashSpeed") then
+		label:SetText(value.." ms");
+	elseif(key == "normalAlpha") then
+		label:SetText(value.."%");
+	else
 		label:SetText(value);
 	end
-	WIM_TabsUpdate();
 end
 
 function WIM_Options_TabsReset()

@@ -82,7 +82,7 @@ Settings are saved in `WIM_Data.tabs`; missing values are filled in automaticall
 From the repository root:
 
 ```bash
-git archive --format=zip --prefix=WIM/ -o dist/WIM-1.3.6.zip HEAD
+git archive --format=zip --prefix=WIM/ -o dist/WIM-1.3.7.zip HEAD
 ```
 
 The zip contains a single `WIM` folder ready to extract into `Interface\AddOns`.
