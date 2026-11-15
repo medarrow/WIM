@@ -1,0 +1,3 @@
+# Keep repository housekeeping files out of the packaged addon (git archive)
+.gitignore export-ignore
+.gitattributes export-ignore

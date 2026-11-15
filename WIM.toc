@@ -1,0 +1,15 @@
+## Interface: 11200
+## Title: WIM
+## Author: Reworked by me0wg4ming
+## Version: 1.3.5
+## Notes: Give whispers an instant messenger feel.
+## Notes-ruRU: Интерфейс для шепота.
+## DefaultState: Enabled
+## OptionalDeps: Titan
+## SavedVariables: WIM_Data, WIM_Alias, WIM_Filters, WIM_History
+WIM.xml
+WIM_UrlCopy.xml
+WIM_Icon.xml
+WIM_Options.xml
+WIM_History.xml
+WIM_Titan.xml

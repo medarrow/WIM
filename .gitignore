@@ -1,0 +1,15 @@
+# Build output
+dist/
+*.zip
+
+# Backups and editor / OS clutter
+*.bak
+*.orig
+*.tmp
+*~
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+desktop.ini
+.DS_Store
