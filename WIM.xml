@@ -116,7 +116,11 @@
 	</CheckButton>
 
 
-	<Frame name="WIM_msgFrameTemplate" virtual="true" movable="true" enableMouse="true" toplevel="true" frameStrata="DIALOG" parent="UIParent" hidden="true"  clampedToScreen="true">
+	<!-- Not toplevel on purpose: showing a toplevel conversation frame took the client 80-240 ms
+	     (measured with /wim profile in a heavily modded UI); without it Show() is instant. An
+	     explicit Raise() is cheap, so the window is brought to the front when it is clicked
+	     instead (WIM_TabWindowRaise). -->
+	<Frame name="WIM_msgFrameTemplate" virtual="true" movable="true" enableMouse="true" frameStrata="DIALOG" parent="UIParent" hidden="true"  clampedToScreen="true">
 		<Size>
 			<AbsDimension x="384" y="256"/> 
 		</Size>
@@ -362,6 +366,7 @@
 						WIM_UpdateScrollBars(this);
 					</OnMessageScrollChanged>
 					<OnMouseDown>
+						WIM_TabWindowRaise(this:GetParent());
 						this:GetParent():StartMoving();
 						this:GetParent().isMoving = true;
 						this:GetParent().prevLeft = this:GetParent():GetLeft();
@@ -388,7 +393,7 @@
 					</OnMouseUp>
 				</Scripts>
 			</ScrollingMessageFrame>
-			<EditBox name="$parentMsgBox" enableMouse="true" ignoreArrows="true" frameStrata="DIALOG" toplevel="true" historyLines="32" letters="255" autoFocus="false">
+			<EditBox name="$parentMsgBox" enableMouse="true" ignoreArrows="true" frameStrata="DIALOG" historyLines="32" letters="255" autoFocus="false">
 				<Anchors>
 					<Anchor point="TOPLEFT" relativeTo="$parentScrollingMessageFrame" relativePoint="BOTTOMLEFT">
 						<Offset>
@@ -602,6 +607,9 @@
 			<OnLoad>
 				this:RegisterForDrag("LeftButton");
 			</OnLoad>
+			<OnMouseDown>
+				WIM_TabWindowRaise(this);
+			</OnMouseDown>
 			<OnDragStart>
 				this:StartMoving();
 				this.isMoving = true;
@@ -612,17 +620,7 @@
 				WIM_TabWindowMoved(this);
 			</OnDragStop>
 			<OnShow>
-				local f = this;
-				local user = f.theUser;
-				WIM_Windows[user].newMSG = false;
-				WIM_Windows[user].is_visible = true;
-				WIM_LoadShortcutFrame(f);
-				WIM_WindowOnShow();
-				-- tabbed window: make this the one visible conversation (hides the previous one)
-				WIM_TabOnShow(user);
-				if(WIM_Data.autoFocus == true) then
-					getglobal(f:GetName().."MsgBox"):SetFocus();
-				end
+				WIM_MsgFrame_OnShow();
 			</OnShow>
 			<OnHide>
 				local f = this;

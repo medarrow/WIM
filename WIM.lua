@@ -1,4 +1,4 @@
-WIM_VERSION = "1.3.5";
+WIM_VERSION = "1.3.6";
 
 WIM_Windows = {};
 WIM_EditBoxInFocus = nil;
@@ -59,6 +59,80 @@ SlashCmdList["WIMDEBUG"] = function()
 	else
 		DEFAULT_CHAT_FRAME:AddMessage("|cff888888[" .. timestamp .. "]|r |cffff0000[WIM]|r Debug mode OFF")
 	end
+end
+
+--[ Profiling (/wim profile): prints where the time goes whenever a conversation window is shown
+WIM_Profile = false
+WIM_ProfileMarks = {}
+
+function WIM_ProfileNow()
+	return debugprofilestop and debugprofilestop() or 0
+end
+
+local WIM_ProfileFrame = CreateFrame("Frame")
+WIM_ProfileFrame:Hide()
+local WIM_ProfileFrameTimes = {}
+local WIM_ProfileFrameCount = 0
+local WIM_ProfileLabel = ""
+
+local function WIM_ProfileMs(value)
+	return string.format("%.1f", value or 0)
+end
+
+-- wait three frames so the cost of drawing the window for the first time is captured too
+WIM_ProfileFrame:SetScript("OnUpdate", function()
+	WIM_ProfileFrameCount = WIM_ProfileFrameCount + 1
+	WIM_ProfileFrameTimes[WIM_ProfileFrameCount] = arg1 * 1000
+	if WIM_ProfileFrameCount < 3 then
+		return
+	end
+	this:Hide()
+	local m = WIM_ProfileMarks
+	local show, script = m.show or 0, m.script or 0
+	local tabs = (m.tabs or 0) - (m.hideold or 0)
+	DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[WIM profile]|r "..WIM_ProfileLabel..": Show() "..WIM_ProfileMs(show).." ms = scripts "..WIM_ProfileMs(script)
+		.." (hooks/skin "..WIM_ProfileMs(m.hooks)..", hide old "..WIM_ProfileMs(m.hideold)..", tab strip "..WIM_ProfileMs(tabs)
+		..") + engine "..WIM_ProfileMs(show - script))
+	DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[WIM profile]|r    create "..WIM_ProfileMs(m.create)..", props "..WIM_ProfileMs(m.props)
+		..", history "..WIM_ProfileMs(m.history)..", menu "..WIM_ProfileMs(m.menu)..", focus "..WIM_ProfileMs(m.focus)
+		.." ms | next frames: "..WIM_ProfileMs(WIM_ProfileFrameTimes[1]).." / "..WIM_ProfileMs(WIM_ProfileFrameTimes[2])
+		.." / "..WIM_ProfileMs(WIM_ProfileFrameTimes[3]).." ms (now "..WIM_ProfileMs(GetFramerate()).." fps)")
+	for k in pairs(m) do
+		m[k] = nil
+	end
+end)
+
+function WIM_ProfileReport(label)
+	WIM_ProfileLabel = label or "?"
+	WIM_ProfileFrameCount = 0
+	WIM_ProfileFrame:Show()
+end
+
+function WIM_ProfileToggle()
+	WIM_Profile = not WIM_Profile
+	if WIM_Profile then
+		if not debugprofilestop then
+			WIM_Profile = false
+			DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[WIM profile]|r This client has no debugprofilestop(); profiling is not available.")
+			return
+		end
+		if debugprofilestart then debugprofilestart() end
+		DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[WIM profile]|r ON - switch tabs / open conversations and read the timings here. /wim profile again to turn it off.")
+	else
+		DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[WIM profile]|r OFF")
+	end
+end
+
+--[ Every place that opens a conversation frame goes through here, so it can be timed
+function WIM_ShowWindow(f)
+	if not WIM_Profile then
+		f:Show()
+		return
+	end
+	local t0 = WIM_ProfileNow()
+	f:Show()
+	WIM_ProfileMarks.show = (WIM_ProfileMarks.show or 0) + (WIM_ProfileNow() - t0)
+	WIM_ProfileReport(f.theUser)
 end
 
 function WIM_TableCount(t)
@@ -602,13 +676,17 @@ function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix)
 	
 	local f,chatBox
 	local isNew = false
+	local prof, profT = WIM_Profile, nil
 	if not WIM_Windows[user] then
+		if prof then profT = WIM_ProfileNow() end
 		if getglobal('WIM_msgFrame'..user) then
 			f = getglobal('WIM_msgFrame'..user)
 		else
 			f = CreateFrame('Frame', 'WIM_msgFrame'..user,UIParent, 'WIM_msgFrameTemplate')
 		end
+		if prof then WIM_ProfileMarks.create = WIM_ProfileNow() - profT; profT = WIM_ProfileNow() end
 		WIM_SetWindowProps(f)
+		if prof then WIM_ProfileMarks.props = WIM_ProfileNow() - profT end
 		WIM_Windows[user] = {
 			frame = 'WIM_msgFrame'..user,
 			newMSG = true, 
@@ -639,7 +717,9 @@ function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix)
 			end
 		end
 		WIM_UpdateCascadeStep()
+		if prof then profT = WIM_ProfileNow() end
 		WIM_DisplayHistory(user)
+		if prof then WIM_ProfileMarks.history = WIM_ProfileNow() - profT end
 		if(WIM_History[user]) then
 			getglobal(f:GetName()..'HistoryButton'):Show()
 		end
@@ -673,9 +753,9 @@ function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix)
 				--[ explicit action (reply / send / whisper command), or the tabbed window is closed,
 				--[ or this conversation is already the visible tab: bring it up
 				WIM_Windows[user].newMSG = false
-				f:Show()
+				WIM_ShowWindow(f)
 				if ttype == 5 then
-					f:Raise()
+					WIM_TabWindowRaise(f)
 					getglobal(f:GetName()..'MsgBox'):SetFocus()
 				end
 			else
@@ -691,7 +771,9 @@ function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix)
 		WIM_Windows[user].newMSG = false
 	end
 	WIM_UpdateScrollBars(chatBox)
+	if prof then profT = WIM_ProfileNow() end
 	WIM_Icon_DropDown_Update()
+	if prof then WIM_ProfileMarks.menu = WIM_ProfileNow() - profT end
 	if WIM_HistoryFrame:IsVisible() then
 		WIM_HistoryViewNameScrollBar_Update()
 		WIM_HistoryViewFiltersScrollBar_Update()
@@ -786,6 +868,8 @@ function WIM_SlashCommand(msg)
 		WIM_TabsInitSettings();
 		WIM_SetAllWindowProps();
 		WIM_TabFrame_SetProps();
+	elseif(msg == "profile") then
+		WIM_ProfileToggle();
 	elseif(msg == "clear history") then
 		WIM_History = {};
 	elseif(msg == "reset filters") then

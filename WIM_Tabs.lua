@@ -205,7 +205,33 @@ function WIM_TabWindowMoved(theWin)
 		theWin:ClearAllPoints();
 		theWin:SetPoint("TOPLEFT", "WIM_TabHost", "TOPLEFT", 0, 0);
 	end
-	WIM_TabFrame:Raise();
+	WIM_TabStripAbove(theWin);
+end
+
+-- Keep the tab strip drawn just above a conversation frame, without raising anything on a
+-- tab switch. Nothing is touched when the strip is already at the right level.
+function WIM_TabStripAbove(theWin)
+	local level = theWin:GetFrameLevel() + 5;
+	if(WIM_TabFrame:GetFrameLevel() ~= level) then
+		WIM_TabFrame:SetFrameLevel(level);
+	end
+	for i=1, table.getn(WIM_TabButtons) do
+		local btn = WIM_TabButtons[i];
+		if(btn:GetFrameLevel() ~= level + 1) then
+			btn:SetFrameLevel(level + 1);
+		end
+	end
+end
+
+-- Bring the tabbed window in front of other windows. Only done when the user clicks it
+-- (or opens it with /w, /r), never as a side effect of switching tabs.
+function WIM_TabWindowRaise(theWin)
+	local t = WIM_Profile and WIM_ProfileNow();
+	theWin:Raise();
+	WIM_TabStripAbove(theWin);
+	if(t) then
+		DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[WIM profile]|r bring to front (click or /w): "..string.format("%.1f", WIM_ProfileNow() - t).." ms");
+	end
 end
 
 local WIM_TabStripAnchor;
@@ -244,8 +270,35 @@ function WIM_TabSelect(theUser)
 	if(f:IsShown()) then
 		WIM_TabOnShow(theUser);
 	else
-		f:Show(); -- the frame's OnShow handler calls WIM_TabOnShow
+		WIM_ShowWindow(f); -- the frame's OnShow handler (WIM_MsgFrame_OnShow) calls WIM_TabOnShow
 	end
+end
+
+-- The conversation frame's OnShow handler ("this" is the frame; other addons hook
+-- WIM_WindowOnShow and rely on that). The timing code only runs under /wim profile.
+function WIM_MsgFrame_OnShow()
+	local f = this;
+	local user = f.theUser;
+	local prof = WIM_Profile;
+	local t0, t;
+	if(prof) then t0 = WIM_ProfileNow(); end
+
+	WIM_Windows[user].newMSG = false;
+	WIM_Windows[user].is_visible = true;
+	WIM_LoadShortcutFrame(f);
+
+	if(prof) then t = WIM_ProfileNow(); end
+	WIM_WindowOnShow();
+	if(prof) then WIM_ProfileMarks.hooks = WIM_ProfileNow() - t; t = WIM_ProfileNow(); end
+
+	-- tabbed window: make this the one visible conversation (hides the previous one)
+	WIM_TabOnShow(user);
+	if(prof) then WIM_ProfileMarks.tabs = WIM_ProfileNow() - t; end
+
+	if(WIM_Data.autoFocus == true) then
+		getglobal(f:GetName().."MsgBox"):SetFocus();
+	end
+	if(prof) then WIM_ProfileMarks.script = WIM_ProfileNow() - t0; end
 end
 
 -- Switch tabs because the user asked to (tab click, icon menu, "next unread"), then - if the
@@ -260,7 +313,9 @@ function WIM_TabSwitchTo(theUser)
 	if(WIM_TabSettings().focusOnSwitch) then
 		local box = getglobal(WIM_Windows[theUser].frame.."MsgBox");
 		if(box) then
+			local t = WIM_Profile and WIM_ProfileNow();
 			box:SetFocus();
+			if(t) then WIM_ProfileMarks.focus = WIM_ProfileNow() - t; end
 		end
 	end
 end
@@ -272,6 +327,7 @@ function WIM_TabOnShow(theUser)
 	end
 
 	-- only one conversation may be visible: hide whichever one was showing before
+	local profT = WIM_Profile and WIM_ProfileNow();
 	WIM_TabSwitching = true;
 	for user, info in pairs(WIM_Windows) do
 		if(user ~= theUser) then
@@ -282,6 +338,7 @@ function WIM_TabOnShow(theUser)
 		end
 	end
 	WIM_TabSwitching = false;
+	if(profT) then WIM_ProfileMarks.hideold = WIM_ProfileNow() - profT; end
 
 	WIM_TabActive = theUser;
 	WIM_Windows[theUser].newMSG = false;
@@ -292,8 +349,8 @@ function WIM_TabOnShow(theUser)
 	if(not WIM_TabFrame:IsShown() and not (WIM_TabSettings().hideSingle and table.getn(WIM_Tabs) <= 1)) then
 		WIM_TabFrame:Show();
 	end
-	WIM_TabFrame:Raise();
 	WIM_TabsRefresh();
+	WIM_TabStripAbove(f); -- after the refresh, so newly created tab buttons are included
 end
 
 -- Called from the conversation frame's OnHide.

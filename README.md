@@ -23,6 +23,7 @@ Type `/wim` in game to open the options.
 | `/wim reset filters` | Restore the default filters |
 | `/wim clear history` | Delete all recorded history |
 | `/wimdebug` | Toggle debug output for the WHO queue |
+| `/wim profile` | Toggle timing output for every conversation window that is shown |
 
 ## Tabbed window
 
@@ -57,6 +58,7 @@ Settings are saved in `WIM_Data.tabs`; missing values are filled in automaticall
 
 ## Performance and fixes in this fork
 
+- Showing a conversation window (and so every tab switch) no longer stalls the game: the windows are not `toplevel` any more, which took the client 80-240 ms per show in a heavily modded UI. They come to the front when clicked or opened with `/w` / `/r` instead.
 - Switching tabs, incoming messages and flash ticks only update the tab buttons that actually changed, instead of rebuilding the whole strip. Fitted tab names are cached.
 - A flash tick only re-colours unread tabs.
 - The shortcut bar of a conversation is set up once per window rather than on every show.
@@ -80,7 +82,7 @@ Settings are saved in `WIM_Data.tabs`; missing values are filled in automaticall
 From the repository root:
 
 ```bash
-git archive --format=zip --prefix=WIM/ -o dist/WIM-1.3.5.zip HEAD
+git archive --format=zip --prefix=WIM/ -o dist/WIM-1.3.6.zip HEAD
 ```
 
 The zip contains a single `WIM` folder ready to extract into `Interface\AddOns`.
