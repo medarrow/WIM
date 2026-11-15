@@ -1,5 +1,8 @@
 WIM_CHANGE_LOG = [[
-Version 1.3.7 (11-15-2026)|cffffffff
+Version 1.3.8 (11-15-2026)|cffffffff
+[+] - The Tabs options page is now skinned when pfUI skins the options window.
+
+|rVersion 1.3.7 (11-15-2026)|cffffffff
 [*] - Tabs options page: the sliders now show their value instead of "Test".
 
 |rVersion 1.3.6 (11-15-2026)|cffffffff

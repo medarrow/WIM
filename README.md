@@ -56,6 +56,10 @@ Changes apply live.
 
 Settings are saved in `WIM_Data.tabs`; missing values are filled in automatically, so existing saved variables keep working.
 
+## pfUI
+
+pfUI skins WIM's windows but only knows the option pages of the original WIM. When pfUI has skinned the options window, WIM skins its own Tabs page to match, using pfUI's helpers. This happens once, the first time the options window is opened, and does nothing without pfUI.
+
 ## Performance and fixes in this fork
 
 - Showing a conversation window (and so every tab switch) no longer stalls the game: the windows are not `toplevel` any more, which took the client 80-240 ms per show in a heavily modded UI. They come to the front when clicked or opened with `/w` / `/r` instead.
@@ -82,7 +86,7 @@ Settings are saved in `WIM_Data.tabs`; missing values are filled in automaticall
 From the repository root:
 
 ```bash
-git archive --format=zip --prefix=WIM/ -o dist/WIM-1.3.7.zip HEAD
+git archive --format=zip --prefix=WIM/ -o dist/WIM-1.3.8.zip HEAD
 ```
 
 The zip contains a single `WIM` folder ready to extract into `Interface\AddOns`.

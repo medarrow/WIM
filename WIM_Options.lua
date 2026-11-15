@@ -110,7 +110,8 @@ function WIM_Options_OnShow()
 		WIM_OptionsTabbedFrameHistorySetAutoDelete:SetChecked(WIM_Data.historySettings.autoDelete.enabled);
 	--[ Tabs
 		WIM_Options_TabsInit();
-		
+		WIM_Options_TabsSkinForPfUI();
+
 	--[ Other
 		
 		WIM_Options_ShowShortcutBarClicked();
@@ -279,6 +280,56 @@ function WIM_Options_Tabs_Click()
 end
 
 --[ Tabs page
+
+-- pfUI skins WIM's options window, but only knows the pages of the original WIM, so the
+-- "Tabs" page would be left in the Blizzard look. When pfUI has skinned the window, skin the
+-- Tabs page the same way using pfUI's own helpers.
+-- Runs when the options window opens (pfUI applies its skin some time after WIM has loaded)
+-- and does its work once; after that every call returns on the first line.
+local WIM_Options_TabsSkinChecked = false;
+function WIM_Options_TabsSkinForPfUI()
+	if(WIM_Options_TabsSkinChecked) then
+		return;
+	end
+	WIM_Options_TabsSkinChecked = true;
+
+	local api = pfUI and pfUI.api;
+	if(type(api) ~= "table") then
+		return; -- pfUI is not installed
+	end
+	if(not WIM_Options.backdrop) then
+		return; -- pfUI did not skin the options window (its WIM skin is turned off)
+	end
+	if(WIM_OptionsOptionTab5.backdrop) then
+		return; -- this pfUI version already skins the Tabs page itself
+	end
+
+	if(api.SkinTab) then
+		local tab = WIM_OptionsOptionTab5;
+		api.SkinTab(tab);
+		-- pfUI sizes a tab when it is shown; this one is already on screen, so do it now
+		tab:SetWidth(tab:GetTextWidth() + 20);
+		if(tab:GetFontString()) then
+			tab:GetFontString():SetPoint("CENTER", 0, 0);
+		end
+	end
+	if(api.SkinCheckbox) then
+		api.SkinCheckbox(WIM_OptionsTabbedFrameTabsFlashEnabled);
+		api.SkinCheckbox(WIM_OptionsTabbedFrameTabsFlashText);
+		api.SkinCheckbox(WIM_OptionsTabbedFrameTabsFlashBorder);
+		api.SkinCheckbox(WIM_OptionsTabbedFrameTabsHideSingle);
+		api.SkinCheckbox(WIM_OptionsTabbedFrameTabsFocusOnSwitch);
+	end
+	if(api.SkinSlider) then
+		api.SkinSlider(WIM_OptionsTabbedFrameTabsFlashSpeed);
+		api.SkinSlider(WIM_OptionsTabbedFrameTabsNormalAlpha);
+		api.SkinSlider(WIM_OptionsTabbedFrameTabsWidth);
+		api.SkinSlider(WIM_OptionsTabbedFrameTabsHeight);
+	end
+	if(api.SkinButton) then
+		api.SkinButton(WIM_OptionsTabbedFrameTabsReset);
+	end
+end
 
 -- Load every control on the Tabs page from WIM_Data.tabs
 function WIM_Options_TabsInit()
