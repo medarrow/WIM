@@ -4,6 +4,24 @@ Gives whispers an instant-messenger feel on the 1.12 (vanilla) client. This vers
 
 > **Fork notice:** this is a continuation of [me0wg4ming/WIM](https://github.com/me0wg4ming/WIM), a TurtleWoW fork of WIM. That repository's page is gone (404), so it could not be forked on GitHub; this repository was started from a local copy of it instead. The original WIM was written by Pazza, with later refactoring by shirsig.
 
+## What's new
+
+**1.3.9**
+- Auto-close: a conversation can close itself after SurpriseMe sends its invite reply (`/wim` -> General), or when a whisper you send matches a filter set to **Close**. Chats you have typed in are kept open by default. See [Auto-closing conversations](#auto-closing-conversations).
+- New filter action **No Popup**: matching whispers are shown in their conversation but never open the window or switch tabs. See [Filter actions](#filter-actions).
+- Fixed: editing a Block filter showed it as Ignore (and saved it as Ignore on OK).
+- Fixed: an empty checkbox showed on the General options page under pfUI.
+
+**1.3.8** - The Tabs options page is skinned when pfUI skins the options window.
+
+**1.3.7** - The Tabs page sliders show their value instead of "Test".
+
+**1.3.6** - Fixed the frame drop whenever a conversation window was shown or a tab was switched. Windows come to the front when clicked or opened with `/w` / `/r`. Added `/wim profile`.
+
+**1.3.5** - First release of this fork: tabbed window, Tabs options page, and the performance work and fixes listed [below](#performance-and-fixes-in-this-fork).
+
+The full history is in game under `/wim help`, and each version is on the [releases page](https://github.com/medarrow/WIM/releases).
+
 ## Installation
 
 1. Download the latest `WIM-x.y.z.zip` from the [releases page](https://github.com/medarrow/WIM/releases), or use **Code -> Download ZIP**.
@@ -56,9 +74,31 @@ Changes apply live.
 
 Settings are saved in `WIM_Data.tabs`; missing values are filled in automatically, so existing saved variables keep working.
 
+## Auto-closing conversations
+
+Handy on raid nights, when every "inv" whisper opens a tab. A whisper **you send** can close its conversation:
+
+- **SurpriseMe's invite reply** (`/wim` -> General -> "Close a chat after SurpriseMe's invite reply", off by default). WIM reads the reply text from SurpriseMe's own settings (`SurpriseMeDB.responseMessage`), so changing it in SurpriseMe needs no setup here. Does nothing without SurpriseMe.
+- **A filter set to "Close"** (`/wim` -> Filters -> Add/Edit). Works with any addon or a phrase you type yourself. Like the other filters it is a case-insensitive Lua pattern, so `OwO7` also matches "OwO7 see you"; use `^OwO7$` to match only the exact message. Needs "Enable filtering" on. Incoming whispers never trigger it.
+
+When a conversation is auto-closed, the whisper is not shown but is still saved to history. No tab is opened if there wasn't one already. If that conversation's whisper had opened the window by itself, the window is put away again. Its pending `/who` lookup is dropped.
+
+**Don't auto-close chats you have typed in** (General, on by default): once you have sent a whisper of your own in a conversation, it is kept open and the auto-reply is shown in it as usual.
+
+## Filter actions
+
+`/wim` -> Filters. Each keyword or phrase (a case-insensitive Lua pattern) gets one action:
+
+| Action | What it does |
+| --- | --- |
+| Ignore | WIM leaves the whisper alone; it goes to the normal chat frame only |
+| Block | The whisper is hidden everywhere |
+| Close (when sent) | A whisper you send closes its conversation (see above) |
+| No Popup | The whisper is shown in its conversation as usual, but never opens the window or switches tabs; an incoming one leaves the tab flagged as unread. Works in both directions |
+
 ## pfUI
 
-pfUI skins WIM's windows but only knows the option pages of the original WIM. When pfUI has skinned the options window, WIM skins its own Tabs page to match, using pfUI's helpers. This happens once, the first time the options window is opened, and does nothing without pfUI.
+pfUI skins WIM's windows but only knows the option pages of the original WIM. When pfUI has skinned the options window, WIM skins its own Tabs page and the auto-close checkboxes to match, using pfUI's helpers. This happens once, the first time the options window is opened, and does nothing without pfUI.
 
 ## Performance and fixes in this fork
 
@@ -72,6 +112,7 @@ pfUI skins WIM's windows but only knows the option pages of the original WIM. Wh
 - `/wim reset` copies the defaults instead of sharing them, also resets the tab options, and re-applies size and scale to open windows.
 - `/who` results go back to the chat frame after a WIM lookup times out.
 - A missing `popUpdate` setting is now filled in correctly.
+- Editing a filter whose action is Block no longer shows it as Ignore in the dialog.
 
 ## Inherited from the TurtleWoW fork
 
@@ -86,7 +127,7 @@ pfUI skins WIM's windows but only knows the option pages of the original WIM. Wh
 From the repository root:
 
 ```bash
-git archive --format=zip --prefix=WIM/ -o dist/WIM-1.3.8.zip HEAD
+git archive --format=zip --prefix=WIM/ -o dist/WIM-1.3.9.zip HEAD
 ```
 
 The zip contains a single `WIM` folder ready to extract into `Interface\AddOns`.

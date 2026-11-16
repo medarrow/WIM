@@ -1,5 +1,13 @@
 WIM_CHANGE_LOG = [[
-Version 1.3.8 (11-15-2026)|cffffffff
+Version 1.3.9 (11-16-2026)|cffffffff
+[+] - Option to close a chat after SurpriseMe's invite reply (General).
+[+] - New filter action "Close": a whisper you send closes its chat.
+[+] - New filter action "No Popup": shown, but never opens the window.
+[+] - Option to keep chats you have typed in from being auto-closed.
+[*] - Editing a Block filter no longer shows it as Ignore.
+[*] - Removed a stray empty checkbox on the General page under pfUI.
+
+|rVersion 1.3.8 (11-15-2026)|cffffffff
 [+] - The Tabs options page is now skinned when pfUI skins the options window.
 
 |rVersion 1.3.7 (11-15-2026)|cffffffff

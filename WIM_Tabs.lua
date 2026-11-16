@@ -26,6 +26,7 @@
 WIM_Tabs = {};            -- ordered list of user names, one entry per open conversation
 WIM_TabActive = nil;      -- user name of the selected tab
 WIM_TabSwitching = false; -- true while one conversation frame is being swapped for another
+WIM_TabPoppedBy = nil;    -- conversation whose incoming whisper opened the window by itself (it's still on screen)
 WIM_TabButtons = {};      -- pool of tab buttons (created on demand)
 WIM_TabFlashTimer = 0;
 WIM_TabFlashOn = false;
@@ -342,6 +343,9 @@ function WIM_TabOnShow(theUser)
 
 	WIM_TabActive = theUser;
 	WIM_Windows[theUser].newMSG = false;
+	if(WIM_TabPoppedBy ~= theUser) then
+		WIM_TabPoppedBy = nil; -- a different conversation is on screen now (see WIM_AutoClose)
+	end
 
 	local f = getglobal(WIM_Windows[theUser].frame);
 	WIM_TabAnchorStrip(f);
@@ -360,6 +364,7 @@ function WIM_TabOnHide(theUser)
 	end
 	if(WIM_TabActive == theUser) then
 		WIM_TabFrame:Hide(); -- the whole tabbed window was closed/hidden
+		WIM_TabPoppedBy = nil;
 	end
 end
 

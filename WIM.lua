@@ -1,4 +1,4 @@
-WIM_VERSION = "1.3.8";
+WIM_VERSION = "1.3.9";
 
 WIM_Windows = {};
 WIM_EditBoxInFocus = nil;
@@ -243,6 +243,8 @@ WIM_Data_DEFAULTS = {
 	useEscape = true,
 	hookWispParse = true,
 	blockLowLevel = false,
+	closeOnSurpriseMe = false,	--[ close a conversation once SurpriseMe has sent its invite auto-reply
+	closeKeepTyped = true,		--[ ...but not if you have typed to that person yourself (also applies to "Close" filters)
 };
 function WIM_CopyTable(src)
 	if(type(src) ~= "table") then
@@ -340,7 +342,9 @@ function WIM_Incoming(event)
 		if(WIM_Data.showAFK == nil) then WIM_Data.showAFK = WIM_Data_DEFAULTS.showAFK; end;
 		if(WIM_Data.useEscape == nil) then WIM_Data.useEscape = WIM_Data_DEFAULTS.useEscape; end;
 		if(WIM_Data.hookWispParse == nil) then WIM_Data.hookWispParse = WIM_Data_DEFAULTS.hookWispParse; end;
-		
+		if(WIM_Data.closeOnSurpriseMe == nil) then WIM_Data.closeOnSurpriseMe = WIM_Data_DEFAULTS.closeOnSurpriseMe; end;
+		if(WIM_Data.closeKeepTyped == nil) then WIM_Data.closeKeepTyped = WIM_Data_DEFAULTS.closeKeepTyped; end;
+
 		if(WIM_Filters == nil) then
 			WIM_LoadDefaultFilters();
 		end
@@ -553,11 +557,12 @@ function WIM_ChatFrame_OnEvent(event)
 			if isGMSender and WIM_Windows[sender] then
 				WIM_SetWhoInfo(sender)
 			end
-			if WIM_FilterResult(content) ~= 1 and WIM_FilterResult(content) ~= 2 then
+			local filter = WIM_FilterResult(content)
+			if filter ~= 1 and filter ~= 2 then
 				-- Include <GM> tag in displayed name if sender is GM
 				local displayName = isGMSender and ("<GM>"..WIM_GetAlias(sender, true)) or WIM_GetAlias(sender, true)
 				msg = "[|Hplayer:"..sender.."|h"..displayName.."|h]: "..content
-				WIM_PostMessage(sender, msg, 1, sender, content)
+				WIM_PostMessage(sender, msg, 1, sender, content, nil, filter == 4)
 			end
 			ChatEdit_SetLastTellTarget(ChatFrameEditBox, sender)
 		end)
@@ -585,9 +590,17 @@ function WIM_ChatFrame_OnEvent(event)
 		end
 		
 		WIM_WhisperedTo[receiver] = true
-		if WIM_FilterResult(content) ~= 1 and WIM_FilterResult(content) ~= 2 then
+		local filter = WIM_FilterResult(content)
+		if (filter == 3 or WIM_IsSurpriseMeReply(content)) and WIM_AutoClose(receiver, content) then
+			return
+		end
+		if filter ~= 1 and filter ~= 2 then
 			msg = "[|Hplayer:"..UnitName("player").."|h"..WIM_GetAlias(UnitName("player"), true).."|h]: "..content
-			WIM_PostMessage(receiver, msg, 2, UnitName("player"), content)
+			WIM_PostMessage(receiver, msg, 2, UnitName("player"), content, nil, filter == 4)
+			--[ you have chatted with this person (see "closeKeepTyped")
+			if WIM_Windows[receiver] then
+				WIM_Windows[receiver].typed = true
+			end
 		end
 	elseif(event == "CHAT_MSG_SYSTEM") then
 		local tstart,tfinish = string.find(arg1, "\'(%a+)\'");
@@ -664,7 +677,7 @@ function WIM_ChatFrameSupressor_OnEvent(event)
 end
 
 
-function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix)
+function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix, noPopup)
 	--[[
 		ttype:
 			1 - Wisper from someone
@@ -672,6 +685,8 @@ function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix)
 			3 - System Message
 			4 - Error Message
 			5 - Show window... Do nothing else...
+		noPopup: the message matched a "No Popup" filter - add it to the conversation
+			but don't open or switch the window for it
 	]]--
 	
 	local f,chatBox
@@ -743,7 +758,13 @@ function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix)
 	elseif ttype == 4 then
 		chatBox:AddMessage(msg, WIM_Data.displayColors.errorMsg.r, WIM_Data.displayColors.errorMsg.g, WIM_Data.displayColors.errorMsg.b)
 	end
-	if WIM_PopOrNot(isNew) or ttype == 2 or ttype == 5 then
+	if noPopup then
+		--[ "No Popup" filter: an incoming message stays unread on its tab; one you sent
+		--[ yourself has been seen already
+		if ttype == 2 then
+			WIM_Windows[user].newMSG = false
+		end
+	elseif WIM_PopOrNot(isNew) or ttype == 2 or ttype == 5 then
 		if ttype == 2 and WIM_Data.popOnSend == false then
 			--[ do nothing, user prefers not to pop on send
 			WIM_Windows[user].newMSG = false
@@ -754,6 +775,11 @@ function WIM_PostMessage(user, msg, ttype, from, raw_msg, hotkeyFix)
 				--[ or this conversation is already the visible tab: bring it up
 				WIM_Windows[user].newMSG = false
 				WIM_ShowWindow(f)
+				if ttype ~= 2 and ttype ~= 5 and not activeOpen then
+					--[ a whisper popped the window open by itself (remembered so an auto-close
+					--[ can put it away again instead of leaving it open on another tab)
+					WIM_TabPoppedBy = user
+				end
 				if ttype == 5 then
 					WIM_TabWindowRaise(f)
 					getglobal(f:GetName()..'MsgBox'):SetFocus()
@@ -1240,6 +1266,56 @@ function WIM_CloseConvo(theUser)
 	WIM_Icon_DropDown_Update();
 end
 
+--[ Auto-close
+--[ A whisper you send can close its conversation: either it matches a filter whose action is
+--[ "Close", or it is SurpriseMe's invite auto-reply (read from SurpriseMe's saved settings, so
+--[ changing the reply there needs no setup here). Both only run when you send a whisper.
+
+--[ true when the whisper text is SurpriseMe's auto-reply and that option is on
+function WIM_IsSurpriseMeReply(content)
+	if(not WIM_Data.closeOnSurpriseMe) then
+		return false;
+	end
+	local db = SurpriseMeDB;
+	if(type(db) ~= "table" or type(db.responseMessage) ~= "string") then
+		return false; --[ SurpriseMe is not installed
+	end
+	local reply = string.gsub(db.responseMessage, "^%s*(.-)%s*$", "%1");
+	if(reply == "") then
+		return false;
+	end
+	return string.gsub(content, "^%s*(.-)%s*$", "%1") == reply;
+end
+
+--[ Handle a sent whisper that should close its conversation. Returns false (the whisper is then
+--[ shown as usual) when the conversation is kept because you have typed to that person.
+function WIM_AutoClose(user, content)
+	local info = WIM_Windows[user];
+	if(info and info.typed and WIM_Data.closeKeepTyped) then
+		return false;
+	end
+
+	--[ the whisper is not shown, but it is still recorded
+	WIM_AddToHistory(user, UnitName("player"), content, true);
+
+	if(info) then
+		local f = getglobal(info.frame);
+		if(WIM_TabPoppedBy == user and WIM_TabActive == user and f:IsShown()) then
+			--[ this conversation's whisper opened the window by itself: put the window away
+			--[ again rather than leaving it open on some other conversation
+			f:Hide();
+		end
+		WIM_CloseConvo(user);
+	end
+	--[ the conversation is gone, so don't spend a /who (30s cooldown) on its class/level info
+	WIM_PlayerCacheQueue[user] = nil;
+	if(WIM_HistoryFrame:IsVisible()) then
+		WIM_HistoryViewNameScrollBar_Update();
+		WIM_HistoryViewFiltersScrollBar_Update();
+	end
+	return true;
+end
+
 function WIM_InitClassProps()
 	WIM_ClassIcons[WIM_LOCALIZED_DRUID] 	= "Interface\\AddOns\\WIM\\Images\\classDRUID";
 	WIM_ClassIcons[WIM_LOCALIZED_HUNTER] 	= "Interface\\AddOns\\WIM\\Images\\classHUNTER";
@@ -1417,6 +1493,10 @@ function WIM_FilterResult(theMSG)
 					return 1;
 				elseif(WIM_Filters[key] == "Block") then
 					return 2;
+				elseif(WIM_Filters[key] == "Close") then
+					return 3; --[ only acted on for whispers you send (WIM_AutoClose)
+				elseif(WIM_Filters[key] == "No Popup") then
+					return 4; --[ shown in the conversation, but never opens the window
 				end
 			end
 		end
@@ -1443,7 +1523,9 @@ function WIM_AddToHistory(theUser, userFrom, theMessage, isMsgIn)
 	local tmpEntry = {};
 	if(WIM_Data.enableHistory) then --[if history is enabled
 		if(WIM_CanRecordUser(theUser)) then --[if record user
-			getglobal(WIM_Windows[theUser].frame.."HistoryButton"):Show();
+			if(WIM_Windows[theUser]) then --[ (there is no window when an auto-closed whisper is recorded)
+				getglobal(WIM_Windows[theUser].frame.."HistoryButton"):Show();
+			end
 			tmpEntry["stamp"] = time();
 			tmpEntry["date"] = date("%m/%d/%y");
 			tmpEntry["time"] = date("%H:%M");

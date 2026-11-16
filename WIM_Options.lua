@@ -80,6 +80,8 @@ function WIM_Options_OnShow()
 		WIM_OptionsTabbedFrameGeneralUseEscape:SetChecked(WIM_Data.useEscape);
 		WIM_OptionsTabbedFrameGeneralInterceptSlashWisp:SetChecked(WIM_Data.hookWispParse);
 		WIM_OptionsTabbedFrameGeneralBlockLowLevel:SetChecked(WIM_Data.blockLowLevel);
+		WIM_OptionsTabbedFrameGeneralCloseSurpriseMe:SetChecked(WIM_Data.closeOnSurpriseMe);
+		WIM_OptionsTabbedFrameGeneralCloseKeepTyped:SetChecked(WIM_Data.closeKeepTyped);
 		
 	--[ Window Settings
 		WIM_OptionsTabbedFrameWindowWindowWidthTitle:SetText(WIM_L_WINDOWWIDTH);
@@ -300,6 +302,36 @@ function WIM_Options_TabsSkinForPfUI()
 	if(not WIM_Options.backdrop) then
 		return; -- pfUI did not skin the options window (its WIM skin is turned off)
 	end
+
+	-- pfUI moves the (hidden, unused) "block low level" checkbox into its skin frame, which then
+	-- shows on its own as an empty box under the last General option
+	local lowLevel = WIM_OptionsTabbedFrameGeneralBlockLowLevel;
+	if(lowLevel.backdrop and not lowLevel:IsShown()) then
+		lowLevel.backdrop:Hide();
+	end
+
+	-- controls added after pfUI's WIM skin was written (skipped if pfUI already did them)
+	if(api.SkinCheckbox) then
+		local actions = { WIM_Options_FilterWindow_ActionClose, WIM_Options_FilterWindow_ActionNoPopup };
+		for i = 1, 2 do
+			if(not actions[i].backdrop) then
+				api.SkinCheckbox(actions[i]);
+			end
+		end
+		-- same as pfUI does for the other General checkboxes, which sit in a scroll frame
+		local general = { WIM_OptionsTabbedFrameGeneralCloseSurpriseMe, WIM_OptionsTabbedFrameGeneralCloseKeepTyped };
+		for i = 1, 2 do
+			local f = general[i];
+			if(not f.backdrop) then
+				api.SkinCheckbox(f);
+				if(f.backdrop and f:GetParent() ~= f.backdrop) then
+					f.backdrop:SetParent(f:GetParent());
+					f:SetParent(f.backdrop);
+				end
+			end
+		end
+	end
+
 	if(WIM_OptionsOptionTab5.backdrop) then
 		return; -- this pfUI version already skins the Tabs page itself
 	end
@@ -537,6 +569,14 @@ function WIM_Options_InterceptSlashWispClicked()
 	end
 end
 
+function WIM_Options_CloseSurpriseMeClicked()
+	WIM_Data.closeOnSurpriseMe = WIM_OptionsTabbedFrameGeneralCloseSurpriseMe:GetChecked() and true or false;
+end
+
+function WIM_Options_CloseKeepTypedClicked()
+	WIM_Data.closeKeepTyped = WIM_OptionsTabbedFrameGeneralCloseKeepTyped:GetChecked() and true or false;
+end
+
 function WIM_Options_BlockLowLevelClicked()
 	if(WIM_OptionsTabbedFrameGeneralBlockLowLevel:GetChecked()) then
 		WIM_Data.blockLowLevel = true;
@@ -741,22 +781,16 @@ function WIM_FilteringScrollBar_Update()
 end
 
 
-function WIM_Options_FilteringIgnoreClicked()
-	if(WIM_Options_FilterWindow_ActionIgnore:GetChecked()) then
-		WIM_Options_FilterWindow.theAction = "Ignore";
-		WIM_Options_FilterWindow_ActionBlock:SetChecked(false);
-	else
-		WIM_Options_FilterWindow_ActionBlock:SetChecked(true);
+-- The filter dialog's action boxes work like radio buttons: exactly one is ticked
+function WIM_Options_FilteringSetAction(action)
+	if(action ~= "Block" and action ~= "Close" and action ~= "No Popup") then
+		action = "Ignore";
 	end
-end
-
-function WIM_Options_FilteringBlockClicked()
-	if(WIM_Options_FilterWindow_ActionBlock:GetChecked()) then
-		WIM_Options_FilterWindow.theAction = "Block";
-		WIM_Options_FilterWindow_ActionIgnore:SetChecked(false);
-	else
-		WIM_Options_FilterWindow_ActionIgnore:SetChecked(true);
-	end
+	WIM_Options_FilterWindow.theAction = action;
+	WIM_Options_FilterWindow_ActionIgnore:SetChecked(action == "Ignore");
+	WIM_Options_FilterWindow_ActionBlock:SetChecked(action == "Block");
+	WIM_Options_FilterWindow_ActionClose:SetChecked(action == "Close");
+	WIM_Options_FilterWindow_ActionNoPopup:SetChecked(action == "No Popup");
 end
 
 function WIM_Options_FilterWindow_Click()

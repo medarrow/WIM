@@ -2110,12 +2110,124 @@
 											</OnLeave>
 										</Scripts>
 									</CheckButton>
-									<CheckButton name="$parentBlockLowLevel" hidden="true">
+									<CheckButton name="$parentCloseSurpriseMe">
 										<Size>
 											<AbsDimension x="25" y="25" />
 										</Size>
 										<Anchors>
 											<Anchor point="TOPLEFT" relativeTo="$parentInterceptSlashWisp" relativePoint="BOTTOMLEFT">
+												<Offset>
+													<AbsDimension x="0" y="-2" />
+												</Offset>
+											</Anchor>
+										</Anchors>
+										<NormalTexture file="Interface\Buttons\UI-CheckBox-Up" />
+										<PushedTexture file="Interface\Buttons\UI-CheckBox-Down" />
+										<HighlightTexture file="Interface\Buttons\UI-CheckBox-Highlight" alphaMode="ADD" />
+										<CheckedTexture file="Interface\Buttons\UI-CheckBox-Check" />
+										<Layers>
+											<Layer level="OVERLAY">
+												<FontString name="$parentText" font="Fonts\FRIZQT__.TTF" text="WIM_L_CLOSESURPRISEME">
+													<Anchors>
+														<Anchor point="LEFT">
+															<Offset>
+																<AbsDimension x="30" y="1" />
+															</Offset>
+														</Anchor>
+													</Anchors>
+													<FontHeight>
+														<AbsValue val="12" />
+													</FontHeight>
+													<Color r="1" g="0.8196079" b="0" />
+													<Shadow>
+														<Color r="0" g="0" b="0" />
+														<Offset>
+															<AbsDimension x="1" y="-1" />
+														</Offset>
+													</Shadow>
+												</FontString>
+											</Layer>
+										</Layers>
+										<Scripts>
+											<OnClick>
+												if ( this:GetChecked() ) then
+													PlaySound("igMainMenuOptionCheckBoxOff");
+												else
+													PlaySound("igMainMenuOptionCheckBoxOn");
+												end
+												WIM_Options_CloseSurpriseMeClicked();
+											</OnClick>
+											<OnEnter>
+												GameTooltip:SetOwner(this, "ANCHOR_TOPRIGHT");
+												GameTooltip:SetText(WIM_L_CLOSESURPRISEMETOOLTIP, nil, nil, nil, nil, 1);
+</OnEnter>
+											<OnLeave>
+												GameTooltip:Hide();
+											</OnLeave>
+										</Scripts>
+									</CheckButton>
+									<CheckButton name="$parentCloseKeepTyped">
+										<Size>
+											<AbsDimension x="25" y="25" />
+										</Size>
+										<Anchors>
+											<Anchor point="TOPLEFT" relativeTo="$parentCloseSurpriseMe" relativePoint="BOTTOMLEFT">
+												<Offset>
+													<AbsDimension x="0" y="-2" />
+												</Offset>
+											</Anchor>
+										</Anchors>
+										<NormalTexture file="Interface\Buttons\UI-CheckBox-Up" />
+										<PushedTexture file="Interface\Buttons\UI-CheckBox-Down" />
+										<HighlightTexture file="Interface\Buttons\UI-CheckBox-Highlight" alphaMode="ADD" />
+										<CheckedTexture file="Interface\Buttons\UI-CheckBox-Check" />
+										<Layers>
+											<Layer level="OVERLAY">
+												<FontString name="$parentText" font="Fonts\FRIZQT__.TTF" text="WIM_L_CLOSEKEEPTYPED">
+													<Anchors>
+														<Anchor point="LEFT">
+															<Offset>
+																<AbsDimension x="30" y="1" />
+															</Offset>
+														</Anchor>
+													</Anchors>
+													<FontHeight>
+														<AbsValue val="12" />
+													</FontHeight>
+													<Color r="1" g="0.8196079" b="0" />
+													<Shadow>
+														<Color r="0" g="0" b="0" />
+														<Offset>
+															<AbsDimension x="1" y="-1" />
+														</Offset>
+													</Shadow>
+												</FontString>
+											</Layer>
+										</Layers>
+										<Scripts>
+											<OnClick>
+												if ( this:GetChecked() ) then
+													PlaySound("igMainMenuOptionCheckBoxOff");
+												else
+													PlaySound("igMainMenuOptionCheckBoxOn");
+												end
+												WIM_Options_CloseKeepTypedClicked();
+											</OnClick>
+											<OnEnter>
+												GameTooltip:SetOwner(this, "ANCHOR_TOPRIGHT");
+												GameTooltip:SetText(WIM_L_CLOSEKEEPTYPEDTOOLTIP, nil, nil, nil, nil, 1);
+</OnEnter>
+											<OnLeave>
+												GameTooltip:Hide();
+											</OnLeave>
+										</Scripts>
+									</CheckButton>
+									<CheckButton name="$parentBlockLowLevel" hidden="true">
+										<Size>
+											<AbsDimension x="25" y="25" />
+										</Size>
+										<Anchors>
+											<Anchor point="TOPLEFT" relativeTo="$parentCloseKeepTyped" relativePoint="BOTTOMLEFT">
 												<Offset>
 													<AbsDimension x="0" y="-2" />
 												</Offset>
@@ -3374,7 +3486,7 @@
 														WIM_Options_FilterWindow_Name:SetText("");
 														WIM_Options_FilterWindow.prevName = "";
 														WIM_Options_FilterWindow.theMode = "add";
-														WIM_Options_FilterWindow_ActionIgnore:SetChecked(true);
+														WIM_Options_FilteringSetAction("Ignore");
 														WIM_Options_FilterWindow:Show();
 														WIM_Options_FilterWindow_Name:SetFocus();
 													</OnClick>
@@ -3421,11 +3533,7 @@
 															WIM_Options_FilterWindow.theMode = "edit";
 															WIM_Options_FilterWindow.prevName = WIM_Filter_Selected;
 															WIM_Options_FilterWindow_Name:SetText(WIM_Filter_Selected);
-															if(WIM_Filters[WIM_Filter_Selected] == "Ignore") then
-																WIM_Options_FilterWindow_ActionIgnore:SetChecked(true);
-															else
-																WIM_Options_FilterWindow_ActionBlock:SetChecked(true);
-															end
+															WIM_Options_FilteringSetAction(WIM_Filters[WIM_Filter_Selected]);
 															WIM_Options_FilterWindow:Show();
 														end
 													</OnClick>
@@ -4485,7 +4593,7 @@
 	
 	<Frame name="WIM_Options_FilterWindow" movable="false" alpha="1" enableMouse="true" toplevel="true" frameStrata="TOOLTIP" parent="UIParent" hidden="true"  clampedToScreen="true">
 		<Size>
-			<AbsDimension x="400" y="220" />
+			<AbsDimension x="400" y="270" />
 		</Size>
 		<Anchors>
 			<Anchor point="CENTER" relativeTo="WIM_Options">
@@ -4702,7 +4810,7 @@
 						else
 							PlaySound("igMainMenuOptionCheckBoxOn");
 						end
-						WIM_Options_FilteringIgnoreClicked();
+						WIM_Options_FilteringSetAction("Ignore");
 					</OnClick>
 				</Scripts>
 			</CheckButton>
@@ -4751,13 +4859,111 @@
 						else
 							PlaySound("igMainMenuOptionCheckBoxOn");
 						end
-						WIM_Options_FilteringBlockClicked();
+						WIM_Options_FilteringSetAction("Block");
 					</OnClick>
 				</Scripts>
 			</CheckButton>
-		
-		
-		
+			<CheckButton name="WIM_Options_FilterWindow_ActionClose">
+				<Size>
+					<AbsDimension x="25" y="25" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="WIM_Options_FilterWindow_ActionBlock" relativePoint="BOTTOMLEFT">
+						<Offset>
+							<AbsDimension x="0" y="0" />
+						</Offset>
+					</Anchor>
+				</Anchors>
+				<NormalTexture file="Interface\Buttons\UI-CheckBox-Up" />
+				<PushedTexture file="Interface\Buttons\UI-CheckBox-Down" />
+				<HighlightTexture file="Interface\Buttons\UI-CheckBox-Highlight" alphaMode="ADD" />
+				<CheckedTexture file="Interface\Buttons\UI-CheckBox-Check" />
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString name="$parentText" font="Fonts\FRIZQT__.TTF" text="WIM_L_FILTERCLOSE">
+							<Anchors>
+								<Anchor point="LEFT">
+									<Offset>
+										<AbsDimension x="30" y="1" />
+									</Offset>
+								</Anchor>
+							</Anchors>
+							<FontHeight>
+								<AbsValue val="12" />
+							</FontHeight>
+							<Color r="1" g="0.8196079" b="0" />
+							<Shadow>
+							<Color r="0" g="0" b="0" />
+								<Offset>
+									<AbsDimension x="1" y="-1" />
+								</Offset>
+							</Shadow>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnClick>
+						if ( this:GetChecked() ) then
+							PlaySound("igMainMenuOptionCheckBoxOff");
+						else
+							PlaySound("igMainMenuOptionCheckBoxOn");
+						end
+						WIM_Options_FilteringSetAction("Close");
+					</OnClick>
+				</Scripts>
+			</CheckButton>
+			<CheckButton name="WIM_Options_FilterWindow_ActionNoPopup">
+				<Size>
+					<AbsDimension x="25" y="25" />
+				</Size>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="WIM_Options_FilterWindow_ActionClose" relativePoint="BOTTOMLEFT">
+						<Offset>
+							<AbsDimension x="0" y="0" />
+						</Offset>
+					</Anchor>
+				</Anchors>
+				<NormalTexture file="Interface\Buttons\UI-CheckBox-Up" />
+				<PushedTexture file="Interface\Buttons\UI-CheckBox-Down" />
+				<HighlightTexture file="Interface\Buttons\UI-CheckBox-Highlight" alphaMode="ADD" />
+				<CheckedTexture file="Interface\Buttons\UI-CheckBox-Check" />
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString name="$parentText" font="Fonts\FRIZQT__.TTF" text="WIM_L_FILTERNOPOPUP">
+							<Anchors>
+								<Anchor point="LEFT">
+									<Offset>
+										<AbsDimension x="30" y="1" />
+									</Offset>
+								</Anchor>
+							</Anchors>
+							<FontHeight>
+								<AbsValue val="12" />
+							</FontHeight>
+							<Color r="1" g="0.8196079" b="0" />
+							<Shadow>
+							<Color r="0" g="0" b="0" />
+								<Offset>
+									<AbsDimension x="1" y="-1" />
+								</Offset>
+							</Shadow>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnClick>
+						if ( this:GetChecked() ) then
+							PlaySound("igMainMenuOptionCheckBoxOff");
+						else
+							PlaySound("igMainMenuOptionCheckBoxOn");
+						end
+						WIM_Options_FilteringSetAction("No Popup");
+					</OnClick>
+				</Scripts>
+			</CheckButton>
+
+
+
 			<Button name="$parentCancel" inherits="UIPanelButtonTemplate" text="WIM_L_CANCEL">
 				<Size>
 					<AbsDimension x="85" y="28"/>
@@ -4803,8 +5009,6 @@
 				WIM_Options:SetAlpha(.35);
 				WIM_Options:EnableMouse(false);
 				PlaySound("igMainMenuOpen");
-				WIM_Options_FilteringIgnoreClicked();
-				WIM_Options_FilteringBlockClicked();
 			</OnShow>
 			<OnHide>
 				WIM_Options_FilterWindow.prevName = "";
