@@ -7,7 +7,7 @@ Gives whispers an instant-messenger feel on the 1.12 (vanilla) client. This vers
 ## What's new
 
 **1.3.9**
-- Auto-close: a conversation can close itself after SurpriseMe sends its invite reply (`/wim` -> General), or when a whisper you send matches a filter set to **Close**. Chats you have typed in are kept open by default. See [Auto-closing conversations](#auto-closing-conversations).
+- Auto-close: a conversation can close itself after [SurpriseMe](https://github.com/cinos03/SurpriseMe-1.12) sends its invite reply (`/wim` -> General), or when a whisper you send matches a filter set to **Close**. Chats you have typed in are kept open by default. See [Auto-closing conversations](#auto-closing-conversations).
 - New filter action **No Popup**: matching whispers are shown in their conversation but never open the window or switch tabs. See [Filter actions](#filter-actions).
 - Fixed: editing a Block filter showed it as Ignore (and saved it as Ignore on OK).
 - Fixed: an empty checkbox showed on the General options page under pfUI.
@@ -78,7 +78,7 @@ Settings are saved in `WIM_Data.tabs`; missing values are filled in automaticall
 
 Handy on raid nights, when every "inv" whisper opens a tab. A whisper **you send** can close its conversation:
 
-- **SurpriseMe's invite reply** (`/wim` -> General -> "Close a chat after SurpriseMe's invite reply", off by default). WIM reads the reply text from SurpriseMe's own settings (`SurpriseMeDB.responseMessage`), so changing it in SurpriseMe needs no setup here. Does nothing without SurpriseMe.
+- **[SurpriseMe](https://github.com/cinos03/SurpriseMe-1.12)'s invite reply** (`/wim` -> General -> "Close a chat after SurpriseMe's invite reply", off by default). WIM reads the reply text from [SurpriseMe](https://github.com/cinos03/SurpriseMe-1.12)'s own settings (`SurpriseMeDB.responseMessage`), so changing it in [SurpriseMe](https://github.com/cinos03/SurpriseMe-1.12) needs no setup here. Does nothing without [SurpriseMe](https://github.com/cinos03/SurpriseMe-1.12).
 - **A filter set to "Close"** (`/wim` -> Filters -> Add/Edit). Works with any addon or a phrase you type yourself. Like the other filters it is a case-insensitive Lua pattern, so `OwO7` also matches "OwO7 see you"; use `^OwO7$` to match only the exact message. Needs "Enable filtering" on. Incoming whispers never trigger it.
 
 When a conversation is auto-closed, the whisper is not shown but is still saved to history. No tab is opened if there wasn't one already. If that conversation's whisper had opened the window by itself, the window is put away again. Its pending `/who` lookup is dropped.
